@@ -14,6 +14,7 @@ public:
     int value;
     std::string text;
 
+    ExpressionTerm() = default;
     ExpressionTerm(TermType type, int value, std::string text) : type(type), value(value), text(text) {}
 
     bool is_conditional_operator();
