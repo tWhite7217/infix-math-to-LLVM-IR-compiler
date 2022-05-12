@@ -10,19 +10,31 @@ typedef enum {
 	VAR
 } TermType;
 
-typedef struct termInfo {
+class termInfo {
+public:
 	TermType type;
 	int value;
 	std::string text;
 
 	termInfo(TermType type, int value, std::string text) : 
 		type(type), value(value), text(text) {}
-} termInfo;
+		
+
+	bool is_conditional_operator() {
+		return (type == OP) && (value == '?');
+	}
+
+	bool is_not_left_parenthesis() {
+		return (type != OP) || (value != '(');
+	}
+};
 
 int line_num;
 
 std::stack<termInfo> operator_stack;
 std::vector<termInfo> postfix_expression_terms;
+
+std::string postfix_string;
 
 std::stack<bool> parentheses_conditional_or_not_stack;
 
@@ -106,18 +118,6 @@ void handle_left_parenthesis(termInfo term) {
 	operator_stack.push(term);
 }
 
-int is_conditional_operator(termInfo term) {
-	return (previous_term.type == OP) && (previous_term.value == '?');
-}
-
-int is_not_left_parenthesis(termInfo term) {
-	return (term.type != OP) || (term.value != '(');
-}
-
-void handle_exclamation(termInfo term) {
-	postfix_expression_terms.push_back(term);
-}
-
 void handle_new_term(termInfo term) {
 	if (term.type == OP) {
 		if (term.value == '?') {
@@ -133,27 +133,25 @@ void handle_new_term(termInfo term) {
 		postfix_expression_terms.push_back(term);
 	}
 
-	if (is_conditional_operator(previous_term) && is_not_left_parenthesis(term)) {
+	if (previous_term.is_conditional_operator() && term.is_not_left_parenthesis()) {
 		close_conditional();
 	}
 
 	previous_term = term;
 }
 
-void print_postfix() {
-	for (int i = 0; i < postfix_expression_terms.size(); i++) {
-		termInfo term = postfix_expression_terms[i];
+void add_line_to_postfix_string() {
+	for (auto term : postfix_expression_terms) {
+		postfix_string += " ";
 		if (term.type == NUM) {
-			printf("%d ", term.value);
+			postfix_string += std::to_string(term.value);
 		} else if (term.type == VAR) {
-			std::cout << term.text << " ";
-		} else if (term.value == '^') {
-			printf("** ");
+			postfix_string += term.text;
 		} else {
-			printf("%c ", term.value);
+			postfix_string += term.value;
 		}
 	}
-	printf("\n");
+	postfix_string += "\n";
 }
 
 void set_operand_string(std::string& operand_string, termInfo operand) {
@@ -164,30 +162,6 @@ void set_operand_string(std::string& operand_string, termInfo operand) {
 	}
 }
 
-void print_tabs(int num_tabs) {
-	for (int i = 0; i < num_tabs; i++) {
-		printf("    ");
-	}
-}
-
-int get_number_of_nested_ifs(auto current_i) {
-	int number_nested = 0;
-	int nested_level = 0;
-	int i = 1;
-	termInfo next_term = postfix_expression_terms[current_i + i];
-	while (!((nested_level == 0) && (next_term.type == OP) && (next_term.value == ']'))) {
-		if ((next_term.type == OP) && (next_term.value == '[')) {
-			number_nested++;
-			nested_level++;
-		} else if ((next_term.type == OP) && (next_term.value == ']')) {
-			nested_level--;
-		}
-		i++;
-		next_term = postfix_expression_terms[current_i + i];
-	}
-	return number_nested;
-}
-
 void lex_newline_or_eof() {
 	line_num++;
 
@@ -196,7 +170,7 @@ void lex_newline_or_eof() {
 		operator_stack.pop();
 	}
 
-	print_postfix();
+	add_line_to_postfix_string();
 	postfix_expression_terms.clear();
 }
 
@@ -214,14 +188,14 @@ void lex_newline_or_eof() {
 	return 0;
 	}
 	
-[()+\-*/!?=] {
+[()+\-*/!?=^] {
 		termInfo term(OP, yytext[0], "");
 		handle_new_term(term);
 	}
-
+	
 "**" {
-	termInfo term(OP, '^', "");
-	handle_new_term(term);
+		termInfo term(OP, '^', "");
+		handle_new_term(term);
 	}
 
 [0-9]+ {
@@ -245,5 +219,6 @@ int main(int argc, char** argv) {
 	}
 	yyin = fopen(argv[1], "r");
 	yylex();
+	std::cout << postfix_string;
 	return 0;
 }

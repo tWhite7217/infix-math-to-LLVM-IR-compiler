@@ -1,4 +1,5 @@
 *.o
 *.tab.*
 *.yy.*
-infix
+infix_to_postfix
+postfix_to_llvm
