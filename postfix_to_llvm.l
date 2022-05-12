@@ -11,11 +11,10 @@ typedef struct {
 	std::string basic_block;
 } PhiInfo;
 
-int line_num;
-
 int num_basic_blocks = 1;
 
 std::string current_basic_block;
+std::vector<std::string> basic_blocks_in_execution_order;
 std::stack<std::string> basic_block_stack;
 std::stack<PhiInfo> phi_stack;
 std::stack<ExpressionTerm> operand_stack;
@@ -37,6 +36,7 @@ T top_and_pop(std::stack<T>& stack)
 void add_new_basic_block_to_llvm_string() {
 	current_basic_block = top_and_pop(basic_block_stack);
 	llvm_string += "\n " + current_basic_block + ":\n";
+	basic_blocks_in_execution_order.push_back(current_basic_block);
 }
 
 void add_tabs_to_llvm_string(int num_tabs) {
@@ -59,11 +59,11 @@ ExpressionTerm get_next_tmp_var() {
 
 void print_opening_bracket_operation(ExpressionTerm operand2, std::string tmp_var_string) {
 	num_basic_blocks++;
-	std::string zero_label = "BB" + std::to_string(num_basic_blocks);
+	std::string zero_label = "#" + std::to_string(num_basic_blocks);
 	basic_block_stack.push(zero_label);
 
 	num_basic_blocks++;
-	std::string nonzero_label = "BB" + std::to_string(num_basic_blocks);
+	std::string nonzero_label = "#" + std::to_string(num_basic_blocks);
 	
 	add_line_to_llvm_string("ifzero(" + operand2.text + ") goto " + zero_label + ";");
 
@@ -125,20 +125,29 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 	}
 }
 
-void lex_newline_or_eof() {
-	line_num++;
+void replace_all_substrings(std::string& entire_string, const std::string old_substring, std::string new_substring)
+{
+	std::string::size_type pos = entire_string.find(old_substring, 0);
+    while (pos != entire_string.npos) {
+		entire_string.replace(pos, old_substring.length(), new_substring);
+		pos = entire_string.find(old_substring, pos + new_substring.length());
+    }
+}
+
+void fix_basic_blocks() {
+	int new_basic_block_num = 1;
+	std::string new_basic_block_name;
+	for(auto old_basic_block_name : basic_blocks_in_execution_order) {
+		new_basic_block_name = "BB" + std::to_string(new_basic_block_num);
+		replace_all_substrings(llvm_string, old_basic_block_name, new_basic_block_name);
+		new_basic_block_num++;
+	}
 }
 
 %}
 
 %%
 [\n] {
-		lex_newline_or_eof();
-	}
-	
-<<EOF>> {
-		lex_newline_or_eof();
-		return 0;
 	}
 	
 " "[+\-*/!^]" =" {
@@ -171,9 +180,10 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	yyin = fopen(argv[1], "r");
-	basic_block_stack.push("BB1");
+	basic_block_stack.push("#1");
 	add_new_basic_block_to_llvm_string();
 	yylex();
+	fix_basic_blocks();
 	std::cout << llvm_string;
 	return 0;
 }
