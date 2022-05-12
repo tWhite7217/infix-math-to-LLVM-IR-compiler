@@ -9,9 +9,9 @@
 
 int line_num;
 
-int current_basic_block_num = 0;
+int num_basic_blocks = 0;
 
-std::vector<ExpressionTerm> postfix_expression_terms;
+std::stack<std::string> basic_block_stack;
 std::stack<ExpressionTerm> llvm_stack;
 int num_vars = 0;
 int tmp_var_num = 0;
@@ -21,8 +21,10 @@ int last_instruction_wrote_to_tmp;
 std::string llvm_string;
 
 void start_new_basic_block() {
-	current_basic_block_num++;
-	std::cout << "\nBB" << current_basic_block_num << ":\n";
+	// num_basic_blocks++;
+	// std::cout << "\nBB" << num_basic_blocks << ":\n";
+	std::cout << "\n" << basic_block_stack.top() << ":\n";
+	basic_block_stack.pop();
 }
 
 void set_operand_string(std::string& operand_string, ExpressionTerm operand) {
@@ -57,28 +59,37 @@ void print_tabs(int num_tabs) {
 // 	return number_nested;
 // }
 
-void print_opening_bracket_operation(std::string operand2_string) {
+void print_opening_bracket_operation(std::string operand2_string, std::string tmp_var_string) {
 	std::cout << "if(" << operand2_string << ") {\n";
 	print_tabs(2);
-	std::cout << "goto BB" << current_basic_block_num + 1 << ";\n";
+	num_basic_blocks++;
+	std::string if_label = "BB" + std::to_string(num_basic_blocks);
+	std::cout << "goto " << if_label << ";\n";
+	// std::cout << "goto BB" << num_basic_blocks << "_if;\n";
 	print_tabs(1);
 	printf("} else {\n");
 	print_tabs(2);
-	// std::cout << "goto BB" << current_basic_block_num + 2 + (3 * get_number_of_nested_ifs(current_i)) << ";\n";
-	std::cout << "tmp = \n";
+	// std::cout << "goto BB" << num_basic_blocks + 2 + (3 * get_number_of_nested_ifs(current_i)) << ";\n";
+	std::cout << tmp_var_string << " = 0;\n";
+	print_tabs(2);
+	num_basic_blocks++;
+	std::string else_label = "BB" + std::to_string(num_basic_blocks);
+	std::cout << "goto " << else_label << ";\n";
 	print_tabs(1);
+	basic_block_stack.push(else_label);
+	basic_block_stack.push(if_label);
 	printf("}\n");
 }
 
 void print_closing_bracket_operation(std::string tmp_var_string, std::string operand2_string) {
 	std::cout << tmp_var_string << " = " << operand2_string << ";\n";
-	print_tabs(1);
-	std::cout << "goto BB" << current_basic_block_num + 2 << ";\n";
-	start_new_basic_block();
-	print_tabs(1);
-	std::cout << tmp_var_string << " = 0;\n";
-	print_tabs(1);
-	std::cout << "goto BB" << current_basic_block_num + 1 << ";\n";
+	// print_tabs(1);
+	// std::cout << "goto BB" << num_basic_blocks + 2 << ";\n";
+	// start_new_basic_block();
+	// print_tabs(1);
+	// std::cout << tmp_var_string << " = 0;\n";
+	// print_tabs(1);
+	// std::cout << "goto BB" << num_basic_blocks + 1 << ";\n";
 }
 
 void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_operator) {
@@ -86,11 +97,13 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 	ExpressionTerm operand2 = llvm_stack.top();
 	llvm_stack.pop();
 	set_operand_string(operand2_string, operand2);
+	std::string tmp_var_string = "tmp" + std::to_string(tmp_var_num);
 
 	print_tabs(1);
 
 	if (op.value == '[') {
-		print_opening_bracket_operation(operand2_string);
+		print_opening_bracket_operation(operand2_string, tmp_var_string);
+		tmp_var_num++;
 		start_new_basic_block();
 	} else {
 		std::string operand1_string;
@@ -102,7 +115,6 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 			std::cout << operand1_string << " = " << operand2_string << ";\n";
 			llvm_stack.emplace(operand1);
 		} else {
-			std::string tmp_var_string = "tmp" + std::to_string(tmp_var_num);
 			if (op.value == '!') {
 				llvm_stack.emplace(operand1);
 				if (next_term_is_equal_operator) {
@@ -138,7 +150,6 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 
 void lex_newline_or_eof() {
 	line_num++;
-	postfix_expression_terms.clear();
 }
 
 %}
@@ -183,6 +194,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	yyin = fopen(argv[1], "r");
+	basic_block_stack.push("BB1");
 	start_new_basic_block();
 	yylex();
 	std::cout << llvm_string;
