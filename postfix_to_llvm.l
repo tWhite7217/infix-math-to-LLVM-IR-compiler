@@ -3,7 +3,6 @@
 #include <iostream>
 #include <stack>
 #include <vector>
-#include <boost/range/irange.hpp>
 
 #include "ExpressionTerm.h"
 
@@ -28,10 +27,8 @@ int last_instruction_wrote_to_tmp;
 std::string llvm_string;
 
 void start_new_basic_block() {
-	// num_basic_blocks++;
-	// std::cout << "\nBB" << num_basic_blocks << ":\n";
 	current_basic_block = basic_block_stack.top();
-	std::cout << "\n" << current_basic_block << ":\n";
+	llvm_string += "\n " + current_basic_block + ":\n";
 	basic_block_stack.pop();
 }
 
@@ -43,47 +40,47 @@ void set_operand_string(std::string& operand_string, ExpressionTerm operand) {
 	}
 }
 
-void print_tabs(int num_tabs) {
+void add_tabs_to_llvm_string(int num_tabs) {
 	for (int i = 0; i < num_tabs; i++) {
-		printf("    ");
+		llvm_string += "    ";
 	}
 }
 
 void print_opening_bracket_operation(std::string operand2_string, std::string tmp_var_string) {
-	std::cout << "if(" << operand2_string << ") {\n";
-	print_tabs(2);
+	llvm_string += "if(" + operand2_string + ") {\n";
+	add_tabs_to_llvm_string(2);
 	num_basic_blocks++;
 	std::string if_label = "BB" + std::to_string(num_basic_blocks);
-	std::cout << "goto " << if_label << ";\n";
-	print_tabs(1);
-	printf("} else {\n");
-	print_tabs(2);
-	std::cout << tmp_var_string << " = 0;\n";
+	llvm_string += "goto " + if_label + ";\n";
+	add_tabs_to_llvm_string(1);
+	llvm_string += "} else {\n";
+	add_tabs_to_llvm_string(2);
+	llvm_string += tmp_var_string + " = 0;\n";
 	tmp_var_num++;
-	print_tabs(2);
+	add_tabs_to_llvm_string(2);
 	num_basic_blocks++;
 	std::string else_label = "BB" + std::to_string(num_basic_blocks);
-	std::cout << "goto " << else_label << ";\n";
-	print_tabs(1);
-	printf("}\n");
+	llvm_string += "goto " + else_label + ";\n";
+	add_tabs_to_llvm_string(1);
+	llvm_string += "}\n";
 	basic_block_stack.push(else_label);
 	basic_block_stack.push(if_label);
 	phi_stack.push({tmp_var_string, current_basic_block});
 }
 
 void print_closing_bracket_operation(std::string &tmp_var_string, std::string operand2_string) {
-	std::cout << tmp_var_string << " = " << operand2_string << ";\n";
+	llvm_string += tmp_var_string + " = " + operand2_string + ";\n";
 	phi_stack.push({tmp_var_string, current_basic_block});
 	start_new_basic_block();
 	tmp_var_num++;
 	tmp_var_string = "tmp" + std::to_string(tmp_var_num);
 	tmp_var_num++;
-	print_tabs(1);
+	add_tabs_to_llvm_string(1);
 	PhiInfo phi_arg1 = phi_stack.top();
 	phi_stack.pop();
 	PhiInfo phi_arg2 = phi_stack.top();
 	phi_stack.pop();
-	std::cout << tmp_var_string << " = phi([" << phi_arg1.value << ", " << phi_arg1.basic_block << "], [" << phi_arg2.value << ", " << phi_arg2.basic_block << "]);\n";
+	llvm_string += tmp_var_string + " = phi([" + phi_arg1.value + ", " + phi_arg1.basic_block + "], [" + phi_arg2.value + ", " + phi_arg2.basic_block + "]);\n";
 }
 
 void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_operator) {
@@ -93,7 +90,7 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 	set_operand_string(operand2_string, operand2);
 	std::string tmp_var_string = "tmp" + std::to_string(tmp_var_num);
 
-	print_tabs(1);
+	add_tabs_to_llvm_string(1);
 
 	if (op.value == '[') {
 		print_opening_bracket_operation(operand2_string, tmp_var_string);
@@ -105,21 +102,20 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 		set_operand_string(operand1_string, operand1);
 
 		if (op.value == '=') {
-			std::cout << operand1_string << " = " << operand2_string << ";\n";
+			llvm_string += operand1_string + " = " + operand2_string + ";\n";
 			llvm_stack.emplace(operand1);
 		} else {
 			if (op.value == '!') {
 				llvm_stack.emplace(operand1);
 				if (next_term_is_equal_operator) {
-					std::cout << operand1_string << " = !" << operand2_string << ";\n";
+					llvm_string += operand1_string + " = !" + operand2_string + ";\n";
 				} else {
-					std::cout << tmp_var_string << " = !" << operand2_string << ";\n";
+					llvm_string += tmp_var_string + " = !" + operand2_string + ";\n";
 					llvm_stack.emplace(TermType::VAR, 0, tmp_var_string);
 					tmp_var_num++;
 				}
 			} else if (op.value == ']') {
 				print_closing_bracket_operation(tmp_var_string, operand2_string);
-				// start_new_basic_block();
 				llvm_stack.emplace(operand1);
 				llvm_stack.emplace(TermType::VAR, 0, tmp_var_string);
 				tmp_var_num++;
@@ -129,10 +125,10 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 					ExpressionTerm operand0 = llvm_stack.top();
 					llvm_stack.pop();
 					set_operand_string(operand0_string, operand0);
-					std::cout << operand0_string << " = " << operand1_string << " " << char(op.value) << " " << operand2_string << ";\n";
+					llvm_string += operand0_string + " = " + operand1_string + " " + char(op.value) + " " + operand2_string + ";\n";
 					llvm_stack.emplace(operand0);
 				} else {
-					std::cout << tmp_var_string << " = " << operand1_string << " " << char(op.value) << " " << operand2_string << ";\n";
+					llvm_string += tmp_var_string + " = " + operand1_string + " " + char(op.value) + " " + operand2_string + ";\n";
 					llvm_stack.emplace(TermType::VAR, 0, tmp_var_string);
 					tmp_var_num++;
 				}
