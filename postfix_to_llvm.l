@@ -7,11 +7,18 @@
 
 #include "ExpressionTerm.h"
 
+typedef struct {
+	std::string value;
+	std::string basic_block;
+} PhiInfo;
+
 int line_num;
 
-int num_basic_blocks = 0;
+int num_basic_blocks = 1;
 
+std::string current_basic_block;
 std::stack<std::string> basic_block_stack;
+std::stack<PhiInfo> phi_stack;
 std::stack<ExpressionTerm> llvm_stack;
 int num_vars = 0;
 int tmp_var_num = 0;
@@ -23,7 +30,8 @@ std::string llvm_string;
 void start_new_basic_block() {
 	// num_basic_blocks++;
 	// std::cout << "\nBB" << num_basic_blocks << ":\n";
-	std::cout << "\n" << basic_block_stack.top() << ":\n";
+	current_basic_block = basic_block_stack.top();
+	std::cout << "\n" << current_basic_block << ":\n";
 	basic_block_stack.pop();
 }
 
@@ -41,55 +49,41 @@ void print_tabs(int num_tabs) {
 	}
 }
 
-// int get_number_of_nested_ifs(auto current_i) {
-// 	int number_nested = 0;
-// 	int nested_level = 0;
-// 	int i = 1;
-// 	ExpressionTerm next_term = postfix_expression_terms[current_i + i];
-// 	while (!((nested_level == 0) && (next_term.type == TermType::OP) && (next_term.value == ']'))) {
-// 		if ((next_term.type == TermType::OP) && (next_term.value == '[')) {
-// 			number_nested++;
-// 			nested_level++;
-// 		} else if ((next_term.type == TermType::OP) && (next_term.value == ']')) {
-// 			nested_level--;
-// 		}
-// 		i++;
-// 		next_term = postfix_expression_terms[current_i + i];
-// 	}
-// 	return number_nested;
-// }
-
 void print_opening_bracket_operation(std::string operand2_string, std::string tmp_var_string) {
 	std::cout << "if(" << operand2_string << ") {\n";
 	print_tabs(2);
 	num_basic_blocks++;
 	std::string if_label = "BB" + std::to_string(num_basic_blocks);
 	std::cout << "goto " << if_label << ";\n";
-	// std::cout << "goto BB" << num_basic_blocks << "_if;\n";
 	print_tabs(1);
 	printf("} else {\n");
 	print_tabs(2);
-	// std::cout << "goto BB" << num_basic_blocks + 2 + (3 * get_number_of_nested_ifs(current_i)) << ";\n";
 	std::cout << tmp_var_string << " = 0;\n";
+	tmp_var_num++;
 	print_tabs(2);
 	num_basic_blocks++;
 	std::string else_label = "BB" + std::to_string(num_basic_blocks);
 	std::cout << "goto " << else_label << ";\n";
 	print_tabs(1);
+	printf("}\n");
 	basic_block_stack.push(else_label);
 	basic_block_stack.push(if_label);
-	printf("}\n");
+	phi_stack.push({tmp_var_string, current_basic_block});
 }
 
-void print_closing_bracket_operation(std::string tmp_var_string, std::string operand2_string) {
+void print_closing_bracket_operation(std::string &tmp_var_string, std::string operand2_string) {
 	std::cout << tmp_var_string << " = " << operand2_string << ";\n";
-	// print_tabs(1);
-	// std::cout << "goto BB" << num_basic_blocks + 2 << ";\n";
-	// start_new_basic_block();
-	// print_tabs(1);
-	// std::cout << tmp_var_string << " = 0;\n";
-	// print_tabs(1);
-	// std::cout << "goto BB" << num_basic_blocks + 1 << ";\n";
+	phi_stack.push({tmp_var_string, current_basic_block});
+	start_new_basic_block();
+	tmp_var_num++;
+	tmp_var_string = "tmp" + std::to_string(tmp_var_num);
+	tmp_var_num++;
+	print_tabs(1);
+	PhiInfo phi_arg1 = phi_stack.top();
+	phi_stack.pop();
+	PhiInfo phi_arg2 = phi_stack.top();
+	phi_stack.pop();
+	std::cout << tmp_var_string << " = phi([" << phi_arg1.value << ", " << phi_arg1.basic_block << "], [" << phi_arg2.value << ", " << phi_arg2.basic_block << "]);\n";
 }
 
 void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_operator) {
@@ -103,7 +97,6 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 
 	if (op.value == '[') {
 		print_opening_bracket_operation(operand2_string, tmp_var_string);
-		tmp_var_num++;
 		start_new_basic_block();
 	} else {
 		std::string operand1_string;
@@ -126,7 +119,7 @@ void add_llvm_operation_to_string(ExpressionTerm op, bool next_term_is_equal_ope
 				}
 			} else if (op.value == ']') {
 				print_closing_bracket_operation(tmp_var_string, operand2_string);
-				start_new_basic_block();
+				// start_new_basic_block();
 				llvm_stack.emplace(operand1);
 				llvm_stack.emplace(TermType::VAR, 0, tmp_var_string);
 				tmp_var_num++;
