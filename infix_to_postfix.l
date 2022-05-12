@@ -4,43 +4,20 @@
 #include <stack>
 #include <vector>
 
-typedef enum {
-	OP,
-	NUM,
-	VAR
-} TermType;
-
-class termInfo {
-public:
-	TermType type;
-	int value;
-	std::string text;
-
-	termInfo(TermType type, int value, std::string text) : 
-		type(type), value(value), text(text) {}
-		
-
-	bool is_conditional_operator() {
-		return (type == OP) && (value == '?');
-	}
-
-	bool is_not_left_parenthesis() {
-		return (type != OP) || (value != '(');
-	}
-};
+#include "ExpressionTerm.h"
 
 int line_num;
 
-std::stack<termInfo> operator_stack;
-std::vector<termInfo> postfix_expression_terms;
+std::stack<ExpressionTerm> operator_stack;
+std::vector<ExpressionTerm> postfix_expression_terms;
 
 std::string postfix_string;
 
 std::stack<bool> parentheses_conditional_or_not_stack;
 
-termInfo opening_bracket(OP, '[', "");
-termInfo closing_bracket(OP, ']', "");
-termInfo previous_term(NUM, -1, "");
+ExpressionTerm opening_bracket(TermType::OP, '[', "");
+ExpressionTerm closing_bracket(TermType::OP, ']', "");
+ExpressionTerm previous_term(TermType::NUM, -1, "");
 
 int order_of_operator(char op) {
 	switch(op) {
@@ -65,11 +42,11 @@ int order_of_operator(char op) {
 	}
 }
 
-int top_operand_precedence_difference(termInfo op) {
+int top_operand_precedence_difference(ExpressionTerm op) {
 	return order_of_operator(operator_stack.top().value) - order_of_operator(op.value);
 }
 
-int top_operand_should_be_popped(termInfo op) {
+int top_operand_should_be_popped(ExpressionTerm op) {
 	int diff = top_operand_precedence_difference(op);
 	if (op.value == '^') {
 		return diff > 0;
@@ -78,7 +55,7 @@ int top_operand_should_be_popped(termInfo op) {
 	}
 }
 
-void handle_new_operator(termInfo op) {
+void handle_new_operator(ExpressionTerm op) {
 	while (!operator_stack.empty() && top_operand_should_be_popped(op)) {
 		postfix_expression_terms.push_back(operator_stack.top());
 		operator_stack.pop();
@@ -95,7 +72,7 @@ void close_conditional() {
 }
 
 void handle_right_parenthesis() {
-	termInfo popped_operator = operator_stack.top();
+	ExpressionTerm popped_operator = operator_stack.top();
 	operator_stack.pop();
 	while(popped_operator.value != '(') {
 		postfix_expression_terms.push_back(popped_operator);
@@ -109,7 +86,7 @@ void handle_right_parenthesis() {
 	}
 }
 
-void handle_left_parenthesis(termInfo term) {
+void handle_left_parenthesis(ExpressionTerm term) {
 	if (previous_term.value == '?') {
 		parentheses_conditional_or_not_stack.push(true);
 	} else {
@@ -118,8 +95,8 @@ void handle_left_parenthesis(termInfo term) {
 	operator_stack.push(term);
 }
 
-void handle_new_term(termInfo term) {
-	if (term.type == OP) {
+void handle_new_term(ExpressionTerm term) {
+	if (term.type == TermType::OP) {
 		if (term.value == '?') {
 			open_conditional();
 		} else if (term.value == ')') {
@@ -143,9 +120,9 @@ void handle_new_term(termInfo term) {
 void add_line_to_postfix_string() {
 	for (auto term : postfix_expression_terms) {
 		postfix_string += " ";
-		if (term.type == NUM) {
+		if (term.type == TermType::NUM) {
 			postfix_string += std::to_string(term.value);
-		} else if (term.type == VAR) {
+		} else if (term.type == TermType::VAR) {
 			postfix_string += term.text;
 		} else {
 			postfix_string += term.value;
@@ -154,8 +131,8 @@ void add_line_to_postfix_string() {
 	postfix_string += "\n";
 }
 
-void set_operand_string(std::string& operand_string, termInfo operand) {
-	if (operand.type == NUM) {
+void set_operand_string(std::string& operand_string, ExpressionTerm operand) {
+	if (operand.type == TermType::NUM) {
 		operand_string = std::to_string(operand.value);
 	} else {
 		operand_string = operand.text;
@@ -188,23 +165,23 @@ void lex_newline_or_eof() {
 	return 0;
 	}
 	
-[()+\-*/!?=^] {
-		termInfo term(OP, yytext[0], "");
+[()+\-*/!?=] {
+		ExpressionTerm term(TermType::OP, yytext[0], "");
 		handle_new_term(term);
 	}
 	
 "**" {
-		termInfo term(OP, '^', "");
+		ExpressionTerm term(TermType::OP, '^', "");
 		handle_new_term(term);
 	}
 
 [0-9]+ {
-	termInfo term(NUM, atoi(yytext), "");
+	ExpressionTerm term(TermType::NUM, atoi(yytext), "");
 	handle_new_term(term);
 	}
 
 [A-z][A-z0-9_]* {
-	termInfo term(VAR, 0, std::string(yytext));
+	ExpressionTerm term(TermType::VAR, 0, std::string(yytext));
 	handle_new_term(term);
 	}
 
