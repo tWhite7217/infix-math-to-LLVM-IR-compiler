@@ -192,6 +192,7 @@ int yywrap() { /* need this to avoid link problem */
 
 int main(int argc, char** argv) {
 	if (argc < 2) {
+		std::cout << "A file must be provided in the command line.\n";
 		return 0;
 	}
 	yyin = fopen(argv[1], "r");
