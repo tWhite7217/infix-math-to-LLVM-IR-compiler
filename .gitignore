@@ -3,3 +3,4 @@
 *.yy.*
 infix_to_postfix
 postfix_to_llvm
+.vscode/
