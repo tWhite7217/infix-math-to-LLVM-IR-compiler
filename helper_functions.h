@@ -12,3 +12,7 @@ T top_and_pop(std::stack<T> &stack)
 }
 
 void replace_all_substrings(std::string &, const std::string, std::string);
+void ltrim_inplace(std::string &s);
+void rtrim_inplace(std::string &s);
+std::string ltrim(std::string s);
+std::string rtrim(std::string s);

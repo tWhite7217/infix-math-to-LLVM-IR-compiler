@@ -1,8 +1,8 @@
 #include "LLVMCode.h"
 
-LLVMCode::LLVMCode()
+LLVMCode::LLVMCode(std::string first_basic_block)
 {
-    basic_block_stack.push("#1");
+    basic_block_stack.push(first_basic_block);
     add_new_basic_block();
 }
 
@@ -148,7 +148,7 @@ LLVMCode::OperandAndString LLVMCode::get_ambiguous_result_var(bool next_term_is_
 void LLVMCode::add_new_basic_block()
 {
     current_basic_block = top_and_pop(basic_block_stack);
-    llvm_string += "\n " + current_basic_block + ":\n";
+    llvm_string += "\n" + current_basic_block + ":\n";
     basic_blocks_in_execution_order.push_back(current_basic_block);
 }
 
@@ -162,7 +162,7 @@ void LLVMCode::add_tabs(int num_tabs)
 {
     for (int i = 0; i < num_tabs; i++)
     {
-        llvm_string += "    ";
+        llvm_string += tab;
     }
 }
 
@@ -180,15 +180,40 @@ void LLVMCode::fix_basic_blocks()
 
 void LLVMCode::handle_undefined_variables()
 {
-    std::string assignments;
+    strip_first_basic_block_label();
+
+    LLVMCode assignments{"BB1"};
     if (undefined_variables_are_user_input)
     {
+        assignments.set_each_undefined_variable_to("get_user_input()", variables_that_are_used_before_defined);
     }
     else
     {
-        for (auto variable : variables_that_are_used_before_defined)
-        {
-            // assignments += ;
-        }
+        assignments.set_each_undefined_variable_to("0", variables_that_are_used_before_defined);
     }
+    concatenate_to_front(assignments);
+}
+
+void LLVMCode::strip_first_basic_block_label()
+{
+    auto basic_block_label_endpoint = llvm_string.find(":\n") + 1;
+    llvm_string.erase(0, basic_block_label_endpoint);
+}
+
+void LLVMCode::set_each_undefined_variable_to(std::string value, std::vector<std::string> undefined_variables)
+{
+    for (auto variable : undefined_variables)
+    {
+        add_line(variable + ".1 = " + value + ";\n");
+    }
+}
+
+void LLVMCode::concatenate_to_front(LLVMCode header_code)
+{
+    llvm_string = rtrim(header_code.get_code()) + "\n" + tab + ltrim(llvm_string);
+}
+
+std::string LLVMCode::get_code()
+{
+    return llvm_string;
 }

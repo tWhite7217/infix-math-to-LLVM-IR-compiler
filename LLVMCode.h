@@ -14,13 +14,14 @@ class LLVMCode
 public:
     bool undefined_variables_are_user_input;
 
+    std::string get_code();
     void print();
     void handle_new_operand(ExpressionTerm);
     void add_operation(ExpressionTerm, bool);
     void fix_basic_blocks();
     void handle_undefined_variables();
 
-    LLVMCode();
+    LLVMCode(std::string);
 
 private:
     typedef struct
@@ -34,6 +35,8 @@ private:
         ExpressionTerm term;
         std::string string;
     } OperandAndString;
+
+    const std::string tab = "    ";
 
     std::string llvm_string;
     int num_basic_blocks = 1;
@@ -58,4 +61,7 @@ private:
     OperandAndString get_next_operand_and_its_string(bool is_being_assigned);
     OperandAndString get_next_tmp_var_and_its_string();
     OperandAndString get_ambiguous_result_var(bool next_term_is_equal_operator);
+    void strip_first_basic_block_label();
+    void set_each_undefined_variable_to(std::string, std::vector<std::string>);
+    void concatenate_to_front(LLVMCode);
 };

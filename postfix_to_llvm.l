@@ -3,7 +3,7 @@
 
 #include "LLVMCode.h"
 
-LLVMCode code_body;
+LLVMCode code_body{"#1:\n"};
 
 %}
 
