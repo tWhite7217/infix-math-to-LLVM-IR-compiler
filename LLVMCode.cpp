@@ -24,29 +24,31 @@ void LLVMCode::add_operation(ExpressionTerm op, bool next_term_is_equal_operator
 {
     auto [operand2, operand2_string] = get_next_operand_and_its_string(false);
 
-    if (op.value == '[')
+    switch (op.value)
     {
+    case '[':
         add_opening_bracket_operation(operand2_string);
-    }
-    else if (op.value == '=')
-    {
+        break;
+
+    case '=':
         add_equals_operation(operand2_string);
-    }
-    else if (op.value == ']')
-    {
+        break;
+
+    case ']':
         add_closing_bracket_operation(operand2_string, next_term_is_equal_operator);
-    }
-    else if (op.value == '!')
-    {
+        break;
+
+    case '!':
         add_not_operation(operand2_string, next_term_is_equal_operator);
-    }
-    else if (op.value == '^')
-    {
+        break;
+
+    case '^':
         add_exponent_operation(operand2_string, next_term_is_equal_operator);
-    }
-    else
-    {
+        break;
+
+    default:
         add_standard_operation(char(op.value), operand2_string, next_term_is_equal_operator);
+        break;
     }
 }
 
