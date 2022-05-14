@@ -257,7 +257,39 @@ void LLVMCode::concatenate_assignments_to_front(LLVMCode assignments)
 
 void LLVMCode::add_header_and_footer()
 {
+    std::string variable_string_constants = get_varaiable_string_constants();
+    std::string header = get_header_with_string_constants(variable_string_constants);
     llvm_string = header + llvm_string + footer;
+}
+
+std::string LLVMCode::get_varaiable_string_constants()
+{
+    std::string variable_string_constants;
+    for (auto [variable_name, num_assignments] : num_assignments_per_variable)
+    {
+        std::string length_string = std::to_string(variable_name.length() + 1);
+        variable_string_constants += "@." + variable_name + " = private unnamed_addr constant [" + length_string + " x i8] c\"" + variable_name + "\\00\", align 1\n";
+    }
+    return variable_string_constants;
+}
+
+std::string LLVMCode::get_header_with_string_constants(std::string variable_string_constants)
+{
+    return header_start + variable_string_constants + header_end;
+}
+
+void LLVMCode::add_variable_printfs()
+{
+    for (auto [variable_name, num_assignments] : num_assignments_per_variable)
+    {
+        std::string length_string = std::to_string(variable_name.length() + 1);
+        std::string variable_last_assignment = "%" + variable_name + "." + std::to_string(num_assignments);
+        auto last_assignment_string_pos = llvm_string.find(variable_last_assignment + " = ");
+        auto newline_pos_after_last_assignment = llvm_string.find("\n", last_assignment_string_pos);
+        auto pos_to_insert = newline_pos_after_last_assignment + 1;
+        std::string printf_line = tab + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.format_string, i64 0, i64 0), i8* getelementptr inbounds ([" + length_string + " x i8], [" + length_string + " x i8]* @." + variable_name + ", i64 0, i64 0), i32 " + variable_last_assignment + ")\n";
+        llvm_string.insert(pos_to_insert, printf_line);
+    }
 }
 
 std::string LLVMCode::get_code()

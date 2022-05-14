@@ -20,8 +20,10 @@ public:
     void add_operation(ExpressionTerm, bool);
     void fix_basic_blocks();
     void handle_undefined_variables();
+    void add_variable_printfs();
     void add_header_and_footer();
 
+    LLVMCode() = default;
     LLVMCode(std::string);
 
 private:
@@ -38,21 +40,22 @@ private:
     } OperandAndString;
 
     const std::string tab = "    ";
-    const std::string header = "; ModuleID = 'test.cpp'\n"
-                               "source_filename = \"test.cpp\"\n"
-                               "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n"
-                               "target triple = \"x86_64-pc-linux-gnu\"\n\n"
-                               "define i32 @pow(i32 %a, i32 %b) {\n" +
-                               tab +
-                               "%fa = sitofp i32 %a to fp128\n" + tab +
-                               "%fres = call fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n" + tab +
-                               "%res = fptosi fp128 %fres to i32\n" + tab +
-                               "ret i32 %res\n" +
-                               "}\n\n" +
+    const std::string header_start = "; ModuleID = 'test.cpp'\n"
+                                     "source_filename = \"test.cpp\"\n"
+                                     "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n"
+                                     "target triple = \"x86_64-pc-linux-gnu\"\n\n"
+                                     "@.format_string = private unnamed_addr constant [9 x i8] c\"%s = %d\\0A\\00\", align 1\n";
 
-                               "define i32 @main() {";
+    const std::string header_end = "\ndefine i32 @pow(i32 %a, i32 %b) {\n" +
+                                   tab + "%fa = sitofp i32 %a to fp128\n" +
+                                   tab + "%fres = call fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n" +
+                                   tab + "%res = fptosi fp128 %fres to i32\n" +
+                                   tab + "ret i32 %res\n" +
+                                   "}\n\n" +
+                                   "define i32 @main() {";
     const std::string footer = tab + "ret i32 0\n" +
                                "}\n\n" +
+                               "declare dso_local i32 @printf(i8*, ...)\n" +
                                "declare fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n";
 
     std::string llvm_string;
@@ -84,4 +87,6 @@ private:
     void strip_first_basic_block_label();
     void set_each_undefined_variable_to(std::string, std::vector<std::string>);
     void concatenate_assignments_to_front(LLVMCode);
+    std::string get_varaiable_string_constants();
+    std::string get_header_with_string_constants(std::string);
 };
