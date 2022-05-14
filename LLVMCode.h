@@ -20,7 +20,7 @@ public:
     void add_operation(ExpressionTerm, bool);
     void fix_basic_blocks();
     void handle_undefined_variables();
-    void add_header();
+    void add_header_and_footer();
 
     LLVMCode(std::string);
 
@@ -38,6 +38,22 @@ private:
     } OperandAndString;
 
     const std::string tab = "    ";
+    const std::string header = "; ModuleID = 'test.cpp'\n"
+                               "source_filename = \"test.cpp\"\n"
+                               "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n"
+                               "target triple = \"x86_64-pc-linux-gnu\"\n\n"
+                               "define i32 @pow(i32 %a, i32 %b) {\n" +
+                               tab +
+                               "%fa = sitofp i32 %a to fp128\n" + tab +
+                               "%fres = call fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n" + tab +
+                               "%res = fptosi fp128 %fres to i32\n" + tab +
+                               "ret i32 %res\n" +
+                               "}\n\n" +
+
+                               "define i32 @main() {";
+    const std::string footer = tab + "ret i32 0\n" +
+                               "}\n\n" +
+                               "declare fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n";
 
     std::string llvm_string;
     int num_basic_blocks = 1;

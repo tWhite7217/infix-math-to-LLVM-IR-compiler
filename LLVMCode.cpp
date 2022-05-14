@@ -63,11 +63,11 @@ void LLVMCode::add_opening_bracket_operation(std::string operand2_string)
 
     auto [tmp_var, tmp_var_string] = get_next_tmp_var_and_its_string();
     add_line(tmp_var_string + " = icmp eq i32 " + operand2_string + ", 0");
-    add_line("br i1 " + tmp_var_string + ", label " + nonzero_label + ", label " + zero_label);
+    add_line("br i1 " + tmp_var_string + ", label %" + nonzero_label + ", label %" + zero_label);
     // add_line("if(" + operand2_string + ") goto " + nonzero_label + " else goto " + zero_label + ";");
 
     basic_block_stack.push(nonzero_label);
-    phi_stack.push({"0", current_basic_block});
+    phi_stack.push({"0", "%" + current_basic_block});
     add_new_basic_block();
 }
 
@@ -75,9 +75,10 @@ void LLVMCode::add_closing_bracket_operation(std::string operand2_string, bool n
 {
     auto [tmp_var, tmp_var_string] = get_next_tmp_var_and_its_string();
     PhiInfo phi_arg1 = top_and_pop(phi_stack);
-    PhiInfo phi_arg2 = {tmp_var_string, current_basic_block};
+    PhiInfo phi_arg2 = {tmp_var_string, "%" + current_basic_block};
 
     add_line(tmp_var_string + " = or i32 " + operand2_string + ", 0");
+    add_line("br label %" + basic_block_stack.top());
     add_new_basic_block();
 
     auto [result_var, result_var_string] = get_ambiguous_result_var(next_term_is_equal_operator);
@@ -108,7 +109,7 @@ void LLVMCode::add_exponent_operation(std::string operand2_string, bool next_ter
 {
     auto [operand1, operand1_string] = get_next_operand_and_its_string(false);
     auto [result_var, result_var_string] = get_ambiguous_result_var(next_term_is_equal_operator);
-    add_line(result_var_string + " = call i32 @pow(" + operand1_string + ", " + operand2_string + ")");
+    add_line(result_var_string + " = call i32 @pow(i32 " + operand1_string + ", i32 " + operand2_string + ")");
     operand_stack.emplace(result_var);
 }
 
@@ -213,7 +214,7 @@ void LLVMCode::fix_basic_blocks()
     std::string new_basic_block_name;
     for (auto old_basic_block_name : basic_blocks_in_execution_order)
     {
-        new_basic_block_name = "%BB-" + std::to_string(new_basic_block_num);
+        new_basic_block_name = "BB-" + std::to_string(new_basic_block_num);
         replace_all_substrings(llvm_string, old_basic_block_name, new_basic_block_name);
         new_basic_block_num++;
     }
@@ -223,7 +224,7 @@ void LLVMCode::handle_undefined_variables()
 {
     strip_first_basic_block_label();
 
-    LLVMCode assignments{"%BB-1"};
+    LLVMCode assignments{"BB-1"};
     if (undefined_variables_are_user_input)
     {
         assignments.set_each_undefined_variable_to("get_user_input()", variables_that_are_used_before_defined);
@@ -254,10 +255,9 @@ void LLVMCode::concatenate_assignments_to_front(LLVMCode assignments)
     llvm_string = rtrim(assignments.get_code()) + "\n" + tab + ltrim(llvm_string);
 }
 
-void LLVMCode::add_header()
+void LLVMCode::add_header_and_footer()
 {
-    //     std::string header;
-    //     llvm_string = header + llvm_string;
+    llvm_string = header + llvm_string + footer;
 }
 
 std::string LLVMCode::get_code()
