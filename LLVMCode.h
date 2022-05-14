@@ -20,6 +20,7 @@ public:
     void add_operation(ExpressionTerm, bool);
     void fix_basic_blocks();
     void handle_undefined_variables();
+    void add_header();
 
     LLVMCode(std::string);
 
@@ -52,16 +53,19 @@ private:
     void add_new_basic_block();
     void add_tabs(int);
     void add_line(std::string);
+    void add_assignment_line(std::string, std::string);
     void add_opening_bracket_operation(std::string);
     void add_closing_bracket_operation(std::string, bool);
     void add_not_operation(std::string, bool);
     void add_equals_operation(std::string);
+    void add_exponent_operation(std::string, bool);
     void add_standard_operation(char, std::string, bool);
+    std::string get_operation_string_for_standard_operation(char);
     std::string get_operand_string(ExpressionTerm operand, bool is_being_assigned);
     OperandAndString get_next_operand_and_its_string(bool is_being_assigned);
     OperandAndString get_next_tmp_var_and_its_string();
     OperandAndString get_ambiguous_result_var(bool next_term_is_equal_operator);
     void strip_first_basic_block_label();
     void set_each_undefined_variable_to(std::string, std::vector<std::string>);
-    void concatenate_to_front(LLVMCode);
+    void concatenate_assignments_to_front(LLVMCode);
 };

@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
 	yylex();
 	code_body.fix_basic_blocks();
 	code_body.handle_undefined_variables();
+	code_body.add_header();
 	code_body.print();
 	return 0;
 }
