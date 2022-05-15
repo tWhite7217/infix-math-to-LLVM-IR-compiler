@@ -2,8 +2,9 @@
 
 int main(int argc, char **argv)
 {
-    int x = 1;
+    int x;
+    scanf("%d", &x);
     // puts("hello world\n");
-    printf("%s = %d\n", "b.1", 0);
+    printf("x = %d\n", x);
     return 0;
 }

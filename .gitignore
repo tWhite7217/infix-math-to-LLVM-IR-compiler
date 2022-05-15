@@ -1,3 +1,5 @@
+compiled
+*.s
 *.ll
 *.bc
 test

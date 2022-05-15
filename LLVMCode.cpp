@@ -227,11 +227,11 @@ void LLVMCode::handle_undefined_variables()
     LLVMCode assignments{"BB-1"};
     if (undefined_variables_are_user_input)
     {
-        assignments.set_each_undefined_variable_to("get_user_input()", variables_that_are_used_before_defined);
+        assignments.set_each_undefined_variable_to_user_input(variables_that_are_used_before_defined);
     }
     else
     {
-        assignments.set_each_undefined_variable_to("0", variables_that_are_used_before_defined);
+        assignments.set_each_undefined_variable_to_0(variables_that_are_used_before_defined);
     }
     concatenate_assignments_to_front(assignments);
 }
@@ -242,11 +242,20 @@ void LLVMCode::strip_first_basic_block_label()
     llvm_string.erase(0, basic_block_label_endpoint);
 }
 
-void LLVMCode::set_each_undefined_variable_to(std::string value, std::vector<std::string> undefined_variables)
+void LLVMCode::set_each_undefined_variable_to_user_input(std::vector<std::string> undefined_variables)
+{
+    for (auto variable_name : undefined_variables)
+    {
+        std::string length_string = std::to_string(variable_name.length() + 1);
+        add_line("%" + variable_name + ".1 = call i32 @my_scanf(i8* getelementptr inbounds ([" + length_string + " x i8], [" + length_string + " x i8]* @." + variable_name + ", i64 0, i64 0))");
+    }
+}
+
+void LLVMCode::set_each_undefined_variable_to_0(std::vector<std::string> undefined_variables)
 {
     for (auto variable : undefined_variables)
     {
-        add_assignment_line("%" + variable + ".1", value);
+        add_assignment_line("%" + variable + ".1", "0");
     }
 }
 
@@ -287,7 +296,7 @@ void LLVMCode::add_variable_printfs()
         auto last_assignment_string_pos = llvm_string.find(variable_last_assignment + " = ");
         auto newline_pos_after_last_assignment = llvm_string.find("\n", last_assignment_string_pos);
         auto pos_to_insert = newline_pos_after_last_assignment + 1;
-        std::string printf_line = tab + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.format_string, i64 0, i64 0), i8* getelementptr inbounds ([" + length_string + " x i8], [" + length_string + " x i8]* @." + variable_name + ", i64 0, i64 0), i32 " + variable_last_assignment + ")\n";
+        std::string printf_line = tab + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.print_var_format_string, i64 0, i64 0), i8* getelementptr inbounds ([" + length_string + " x i8], [" + length_string + " x i8]* @." + variable_name + ", i64 0, i64 0), i32 " + variable_last_assignment + ")\n";
         llvm_string.insert(pos_to_insert, printf_line);
     }
 }

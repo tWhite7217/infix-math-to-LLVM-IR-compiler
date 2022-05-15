@@ -40,11 +40,13 @@ private:
     } OperandAndString;
 
     const std::string tab = "    ";
-    const std::string header_start = "; ModuleID = 'test.cpp'\n"
-                                     "source_filename = \"test.cpp\"\n"
+    const std::string header_start = "; ModuleID = 'compiled_calculator_code'\n"
+                                     "source_filename = \"postfix_to_llvm.l\"\n"
                                      "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n"
                                      "target triple = \"x86_64-pc-linux-gnu\"\n\n"
-                                     "@.format_string = private unnamed_addr constant [9 x i8] c\"%s = %d\\0A\\00\", align 1\n";
+                                     "@.print_var_format_string = private unnamed_addr constant [9 x i8] c\"%s = %d\\0A\\00\", align 1\n"
+                                     "@.print_before_scan_format_string = private unnamed_addr constant [6 x i8] c\"%s = \\00\", align 1\n"
+                                     "@.scan_format_string = private unnamed_addr constant [3 x i8] c\"%d\\00\", align 1\n";
 
     const std::string header_end = "\ndefine i32 @pow(i32 %a, i32 %b) {\n" +
                                    tab + "%fa = sitofp i32 %a to fp128\n" +
@@ -52,10 +54,18 @@ private:
                                    tab + "%res = fptosi fp128 %fres to i32\n" +
                                    tab + "ret i32 %res\n" +
                                    "}\n\n" +
+                                   "define i32 @my_scanf(i8* %var_name) {\n" +
+                                   tab + "call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.print_before_scan_format_string, i64 0, i64 0), i8* %var_name)\n" +
+                                   tab + "%mem_addr = alloca i32, align 4\n" +
+                                   tab + "call i32 (i8*, ...) @__isoc99_scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.scan_format_string, i64 0, i64 0), i32* %mem_addr)\n" +
+                                   tab + "%res = load i32, i32* %mem_addr, align 4\n" +
+                                   tab + "ret i32 %res\n" +
+                                   "}\n\n" +
                                    "define i32 @main() {";
     const std::string footer = tab + "ret i32 0\n" +
                                "}\n\n" +
                                "declare dso_local i32 @printf(i8*, ...)\n" +
+                               "declare dso_local i32 @__isoc99_scanf(i8*, ...)\n" +
                                "declare fp128 @llvm.powi.f128.i32(fp128 %fa, i32 %b)\n";
 
     std::string llvm_string;
@@ -85,7 +95,8 @@ private:
     OperandAndString get_next_tmp_var_and_its_string();
     OperandAndString get_ambiguous_result_var(bool next_term_is_equal_operator);
     void strip_first_basic_block_label();
-    void set_each_undefined_variable_to(std::string, std::vector<std::string>);
+    void set_each_undefined_variable_to_user_input(std::vector<std::string>);
+    void set_each_undefined_variable_to_0(std::vector<std::string>);
     void concatenate_assignments_to_front(LLVMCode);
     std::string get_varaiable_string_constants();
     std::string get_header_with_string_constants(std::string);
