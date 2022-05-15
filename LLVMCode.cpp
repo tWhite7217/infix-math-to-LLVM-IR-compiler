@@ -62,7 +62,7 @@ void LLVMCode::add_opening_bracket_operation(std::string operand2_string)
     std::string nonzero_label = "#" + std::to_string(num_basic_blocks);
 
     auto [tmp_var, tmp_var_string] = get_next_tmp_var_and_its_string();
-    add_line(tmp_var_string + " = icmp eq i32 " + operand2_string + ", 0");
+    add_line(tmp_var_string + " = icmp ne i32 " + operand2_string + ", 0");
     add_line("br i1 " + tmp_var_string + ", label %" + nonzero_label + ", label %" + zero_label);
     // add_line("if(" + operand2_string + ") goto " + nonzero_label + " else goto " + zero_label + ";");
 
