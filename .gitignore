@@ -1,3 +1,4 @@
+*.code-workspace
 compiled
 *.s
 *.ll

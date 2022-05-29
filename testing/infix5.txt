@@ -1,0 +1,10 @@
+A = i1 ** i2
+B = A * i3
+C = i4 / i5
+D = C - i6
+E = !i7
+F = E + i8
+G = i9 - i10
+J = G / i11
+K = i12 ** i13
+L = K / i14
