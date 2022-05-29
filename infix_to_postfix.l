@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stack>
 #include <vector>
+#include <unordered_map>
 
 #include "ExpressionTerm.h"
 
@@ -19,31 +20,20 @@ ExpressionTerm opening_bracket(TermType::OP, '[', "");
 ExpressionTerm closing_bracket(TermType::OP, ']', "");
 ExpressionTerm previous_term(TermType::NUM, -1, "");
 
-int order_of_operator(char op) {
-	switch(op) {
-		case '(':
-			return 0;
-		case '=':
-			return 1;
-		case '+':
-		case '-':
-			return 2;
-		case '*':
-		case '/':
-			return 3;
-		case '^':
-			return 4;
-		case '?':
-			return 5;
-		case '!':
-			return 6;
-		default:
-			exit(1);
-	}
-}
+const std::unordered_map<char, int> order_of_operator = {
+	{'(', 0},
+	{'=', 1},
+	{'+', 2},
+	{'-', 2},
+	{'*', 3},
+	{'/', 3},
+	{'^', 4},
+	{'?', 5},
+	{'!', 6},
+};
 
 int top_operand_precedence_difference(ExpressionTerm op) {
-	return order_of_operator(operator_stack.top().value) - order_of_operator(op.value);
+	return order_of_operator.at(operator_stack.top().value) - order_of_operator.at(op.value);
 }
 
 int top_operand_should_be_popped(ExpressionTerm op) {
