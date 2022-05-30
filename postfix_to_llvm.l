@@ -12,28 +12,28 @@ LLVMCode code_body{"#1:\n"};
 	}
 	
 " "[\]+\-*/!^]" =" {
-		ExpressionTerm term{TermType::OP, yytext[1], ""};
+		ExpressionTerm term{TermType::OP, std::string(1, (yytext+1)[0])};
 		code_body.add_operation(term, true);
 	}
 	
 " "[\[\]+\-*/!?=^] {
-		ExpressionTerm term{TermType::OP, yytext[1], ""};
+		ExpressionTerm term{TermType::OP, yytext+1};
 		code_body.add_operation(term, false);
 	}
 
 " "[0-9]+ {
-		ExpressionTerm term{TermType::NUM, atoi(yytext), yytext+1};
+		ExpressionTerm term{TermType::NUM, yytext+1};
 		code_body.handle_new_operand(term);
 	}
 
 " tmp" { 
 		/*This allows users to name a variable "tmp" without conflicting with compilation */
-		ExpressionTerm term{TermType::VAR, 0, "-tmp"};
+		ExpressionTerm term{TermType::VAR, "-tmp"};
 		code_body.handle_new_operand(term);
 	}
 
 " "[A-z][A-z0-9_]* {
-		ExpressionTerm term{TermType::VAR, 0, yytext+1};
+		ExpressionTerm term{TermType::VAR, yytext+1};
 		code_body.handle_new_operand(term);
 	}
 

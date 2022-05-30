@@ -13,15 +13,14 @@ class ExpressionTerm
 {
 public:
     TermType type;
-    int value;
-    std::string text;
+    std::string value;
     bool is_tmp;
 
     ExpressionTerm() = default;
-    ExpressionTerm(TermType type, int value, std::string text)
-        : type(type), value(value), text(text), is_tmp(false) {}
-    ExpressionTerm(TermType type, int value, std::string text, bool is_tmp)
-        : type(type), value(value), text(text), is_tmp(is_tmp) {}
+    ExpressionTerm(TermType type, std::string value)
+        : type(type), value(value), is_tmp(false) {}
+    ExpressionTerm(TermType type, std::string value, bool is_tmp)
+        : type(type), value(value), is_tmp(is_tmp) {}
 
     bool is_conditional_operator();
 

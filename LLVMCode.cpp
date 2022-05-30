@@ -16,7 +16,7 @@ void LLVMCode::handle_new_operand(ExpressionTerm term)
     operand_stack.push(term);
     if (term.type == TermType::VAR)
     {
-        num_assignments_per_variable.insert({term.text, 0});
+        num_assignments_per_variable.insert({term.value, 0});
     }
 }
 
@@ -24,7 +24,7 @@ void LLVMCode::add_operation(ExpressionTerm op, bool next_term_is_equal_operator
 {
     auto [operand2, operand2_string] = get_next_operand_and_its_string(false);
 
-    switch (op.value)
+    switch (op.value[0])
     {
     case '[':
         add_opening_bracket_operation(operand2_string);
@@ -47,7 +47,7 @@ void LLVMCode::add_operation(ExpressionTerm op, bool next_term_is_equal_operator
         break;
 
     default:
-        add_standard_operation(char(op.value), operand2_string, next_term_is_equal_operator);
+        add_standard_operation(op.value[0], operand2_string, next_term_is_equal_operator);
         break;
     }
 }
@@ -134,6 +134,7 @@ std::string LLVMCode::get_operation_string_for_standard_operation(char op_value)
     case '/':
         return "sdiv";
     default:
+        std::cout << op_value << "\n";
         std::cout << "Unknown standard operator.\n";
         exit(1);
     }
@@ -143,20 +144,20 @@ std::string LLVMCode::get_operand_string(ExpressionTerm operand, bool is_being_a
 {
     if (operand.type == TermType::NUM || operand.is_tmp)
     {
-        return operand.text;
+        return operand.value;
     }
 
     if (is_being_assigned)
     {
-        num_assignments_per_variable[operand.text]++;
+        num_assignments_per_variable[operand.value]++;
     }
-    else if (num_assignments_per_variable[operand.text] == 0)
+    else if (num_assignments_per_variable[operand.value] == 0)
     {
-        variables_that_are_used_before_defined.push_back(operand.text);
-        num_assignments_per_variable[operand.text]++;
+        variables_that_are_used_before_defined.push_back(operand.value);
+        num_assignments_per_variable[operand.value]++;
     }
 
-    return "%" + operand.text + "." + std::to_string(num_assignments_per_variable[operand.text]);
+    return "%" + operand.value + "." + std::to_string(num_assignments_per_variable[operand.value]);
 }
 
 LLVMCode::OperandAndString LLVMCode::get_next_operand_and_its_string(bool is_being_assigned)
@@ -170,7 +171,7 @@ LLVMCode::OperandAndString LLVMCode::get_next_tmp_var_and_its_string()
 {
     tmp_var_num++;
     std::string tmp_var_text = "%tmp." + std::to_string(tmp_var_num);
-    ExpressionTerm tmp_var{TermType::VAR, 0, tmp_var_text, true};
+    ExpressionTerm tmp_var{TermType::VAR, tmp_var_text, true};
     return {tmp_var, tmp_var_text};
 }
 
