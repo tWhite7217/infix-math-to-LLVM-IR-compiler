@@ -2,10 +2,10 @@
 
 bool ExpressionTerm::is_conditional_operator()
 {
-    return (type == TermType::OP) && (value == "?");
+    return value == "?";
 }
 
 bool ExpressionTerm::is_not_left_parenthesis()
 {
-    return (type != TermType::OP) || (value != "(");
+    return value != "(";
 }

@@ -47,7 +47,7 @@ void LLVMCode::add_operation(ExpressionTerm op, bool next_term_is_equal_operator
         break;
 
     default:
-        add_standard_operation(op.value[0], operand2_string, next_term_is_equal_operator);
+        add_standard_operation(op.value, operand2_string, next_term_is_equal_operator);
         break;
     }
 }
@@ -112,32 +112,13 @@ void LLVMCode::add_exponent_operation(std::string operand2_string, bool next_ter
     operand_stack.emplace(result_var);
 }
 
-void LLVMCode::add_standard_operation(char op_value, std::string operand2_string, bool next_term_is_equal_operator)
+void LLVMCode::add_standard_operation(std::string op_value, std::string operand2_string, bool next_term_is_equal_operator)
 {
-    std::string operation_string = get_operation_string_for_standard_operation(op_value);
+    std::string operation_string = command_corresponding_to_operation.at(op_value);
     auto [operand1, operand1_string] = get_next_operand_and_its_string(false);
     auto [result_var, result_var_string] = get_ambiguous_result_var(next_term_is_equal_operator);
     add_line(result_var_string + " = " + operation_string + " i32 " + operand1_string + ", " + operand2_string);
     operand_stack.emplace(result_var);
-}
-
-std::string LLVMCode::get_operation_string_for_standard_operation(char op_value)
-{
-    switch (op_value)
-    {
-    case '+':
-        return "add";
-    case '-':
-        return "sub";
-    case '*':
-        return "mul";
-    case '/':
-        return "sdiv";
-    default:
-        std::cout << op_value << "\n";
-        std::cout << "Unknown standard operator.\n";
-        exit(1);
-    }
 }
 
 std::string LLVMCode::get_operand_string(ExpressionTerm operand, bool is_being_assigned)

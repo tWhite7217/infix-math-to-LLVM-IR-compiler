@@ -8,8 +8,6 @@
 #include "helper_functions.h"
 #include "ExpressionTerm.h"
 
-int line_num;
-
 std::stack<ExpressionTerm> operator_stack;
 std::vector<ExpressionTerm> postfix_expression_terms;
 
@@ -108,8 +106,6 @@ void add_line_to_postfix_string() {
 }
 
 void lex_newline_or_eof() {
-	line_num++;
-
 	while(!operator_stack.empty()) {
 		postfix_expression_terms.push_back(top_and_pop(operator_stack));
 	}

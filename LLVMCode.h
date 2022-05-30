@@ -27,6 +27,13 @@ public:
     LLVMCode(std::string);
 
 private:
+    const std::unordered_map<std::string, std::string> command_corresponding_to_operation = {
+        {"+", "add"},
+        {"-", "sub"},
+        {"*", "mul"},
+        {"/", "sidv"},
+    };
+
     typedef struct
     {
         std::string value;
@@ -88,7 +95,7 @@ private:
     void add_not_operation(std::string, bool);
     void add_equals_operation(std::string);
     void add_exponent_operation(std::string, bool);
-    void add_standard_operation(char, std::string, bool);
+    void add_standard_operation(std::string, std::string, bool);
     std::string get_operation_string_for_standard_operation(char);
     std::string get_operand_string(ExpressionTerm operand, bool is_being_assigned);
     OperandAndString get_next_operand_and_its_string(bool is_being_assigned);
